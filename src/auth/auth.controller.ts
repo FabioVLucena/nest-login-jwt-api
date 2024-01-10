@@ -12,6 +12,13 @@ export class AuthController {
     signIn(@Body() signInDto: Record<string, any>) {
         return this.authService.signIn(signInDto.username, signInDto.password);
     }
+    
+    @Public()
+    @Post('register')
+    @HttpCode(HttpStatus.OK)
+    signUp(@Body() signInDto: Record<string, any>) {
+        return this.authService.signUp(signInDto.username, signInDto.password);
+    }
 
     @Get('profile')
     @HttpCode(HttpStatus.OK)
