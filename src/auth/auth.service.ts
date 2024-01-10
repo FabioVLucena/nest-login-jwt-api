@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from 'src/users/users.service';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class AuthService {
@@ -9,10 +10,16 @@ export class AuthService {
         private jwtService: JwtService,
     ) {}
 
-    async signIn(login: string, pass: string): Promise<any> {
+    async signIn(login: string, password: string): Promise<any> {
         const user = await this.usersService.findByLogin(login);
+        // IF USER NOT FOUND
+        if (user == null) {
+            throw new UnauthorizedException();
+        }
 
-        if (user?.password !== pass) {
+        // IF PASSWORD NOT MATCH
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) {
             throw new UnauthorizedException();
         }
 
@@ -30,7 +37,11 @@ export class AuthService {
             throw new BadRequestException("Login in use");
         }
         
-        const user = await this.usersService.create(login, password);
+        // ENCRYPT PASSWORD
+        const salt = await bcrypt.genSalt();
+        const hash = await bcrypt.hash(password, salt);
+
+        const user = await this.usersService.create(login, hash);
         
         const payload = { sub: user.id, login: user.login };
     
@@ -38,4 +49,5 @@ export class AuthService {
             access_token: await this.jwtService.signAsync(payload),
         };
     }
+
 }
